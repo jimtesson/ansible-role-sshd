@@ -19,9 +19,11 @@ Role Variables
 
 You must specify the authorized user for incomming ssh connections.
 
+```
   host_authorized_users:
     - ansible
     - foo
+```
 
 
 Example
