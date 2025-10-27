@@ -1,0 +1,11 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  tasks:
+    - name: Load vars
+      ansible.builtin.include_vars:
+        file: vars.yml
+    - name: "Include jimteson.sshd_setup"
+      ansible.builtin.include_role:
+        name: "jimtesson.sshd_setup"

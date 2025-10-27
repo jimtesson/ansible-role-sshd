@@ -1,0 +1,79 @@
+- name: Verify
+  hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Load vars
+      ansible.builtin.include_vars:
+        file: vars.yml  
+    # - name: Verify recent‑set rule for IPv4 SSH is present
+    #   ansible.builtin.command: >
+    #     iptables -C INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+    #   register: recent_set_check
+    #   changed_when: false          # this task should never be reported as changed
+    #   failed_when: recent_set_check.rc != 0
+    #   become: true
+
+    # - name: Verify recent‑update rule for IPv4 SSH is present
+    #   ansible.builtin.command: >
+    #     iptables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 10 --hitcount 10 -j DROP
+    #   register: recent_set_check
+    #   changed_when: false          # this task should never be reported as changed
+    #   failed_when: recent_set_check.rc != 0
+    #   become: true
+
+    # - name: Verify recent‑set rule for IPv6 SSH is present
+    #   ansible.builtin.command: >
+    #     ip6tables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --set
+    #   register: recent_set_check
+    #   changed_when: false          # this task should never be reported as changed
+    #   failed_when: recent_set_check.rc != 0
+    #   become: true
+
+    # - name: Verify recent‑update rule for IPv6 SSH is present
+    #   ansible.builtin.command: >
+    #     ip6tables -I INPUT -p tcp --dport 22 -m state --state NEW -m recent --update --seconds 10 --hitcount 10 -j DROP
+    #   register: recent_set_check
+    #   changed_when: false          # this task should never be reported as changed
+    #   failed_when: recent_set_check.rc != 0
+    #   become: true
+
+    - name: Verify RSA HostKey directive is present
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^HostKey /etc/ssh/ssh_host_rsa_key"
+        line: "HostKey /etc/ssh/ssh_host_rsa_key"
+        state: present
+      check_mode: true
+      register: ssh_host_rsa_check
+      failed_when: ssh_host_rsa_check.changed
+
+    - name: Verify AllowUsers directive is present
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^AllowUsers"
+        line: "AllowUsers {{ host_authorized_users | join(' ') }}"
+        state: present
+      check_mode: true
+      register: allow_users_check
+      failed_when: allow_users_check.changed
+
+    - name: Verify root connection disabled
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^PermitRootLogin"
+        line: "PermitRootLogin no"
+        state: present
+      check_mode: true
+      register: allow_root_connection_check
+      failed_when: allow_root_connection_check.changed
+
+    - name: Verify password connection disabled
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^PasswordAuthentication"
+        line: "PasswordAuthentication no"
+        state: present
+      check_mode: true
+      register: allow_password_connection_check
+      failed_when: allow_password_connection_check.changed

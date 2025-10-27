@@ -1,0 +1,199 @@
+- name: Update and upgrade apt packages
+  become: true
+  ansible.builtin.package:
+    update_cache: true
+    cache_valid_time: 86400 # One day
+
+- name: Install dependencies
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - openssh-server
+    - iptables
+    - netfilter-persistent
+    - iptables-persistent
+  become: true
+
+  ## ssh-audit hardening
+- name: Remove all generated SSH host keys
+  ansible.builtin.file:
+    path: /etc/ssh/ssh_host_*
+    state: absent
+  become: true
+
+- name: Generate a 4096-bit RSA host key
+  community.crypto.openssh_keypair:
+    path: /etc/ssh/ssh_host_rsa_key        # creates both .key and .pub files
+    type: rsa
+    size: 4096
+    force: false          # set true to overwrite an existing key
+    mode: '0600'
+    owner: root
+    group: root
+  become: true
+
+- name: Generate an Ed25519 SSH host key
+  community.crypto.openssh_keypair:
+    path: /etc/ssh/ssh_host_ed25519_key   # creates .key and .pub files
+    type: ed25519
+    force: false          # set true to overwrite an existing key
+    mode: '0600'
+    owner: root
+    group: root
+  become: true
+
+- name: Enable the ED25519 HostKey directives
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^HostKey /etc/ssh/ssh_host_ed25519_key"
+    line: "HostKey /etc/ssh/ssh_host_ed25519_key"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: Enable the RSA HostKey directives
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^HostKey /etc/ssh/ssh_host_rsa_key"
+    line: "HostKey /etc/ssh/ssh_host_rsa_key"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: Keep only strong DH moduli (prime ≥ 3071 bits)
+  ansible.builtin.shell: |
+    awk '$5 >= 3071' /etc/ssh/moduli > /etc/ssh/moduli.safe &&
+    mv /etc/ssh/moduli.safe /etc/ssh/moduli
+  args:
+    executable: /bin/bash
+  become: true
+  # optional: run only when the file exists and contains weak entries
+  changed_when: true
+
+# configure sshd
+- name: Protocol version 2
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^Protocol"
+    line: "Protocol 2,1"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: Log level
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^LogLevel"
+    line: "LogLevel VERBOSE"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: Configure SSH AllowUsers
+  ansible.builtin.lineinfile: 
+    dest: /etc/ssh/sshd_config
+    regexp: "^AllowUsers"
+    line: "AllowUsers {{ host_authorized_users | join(' ') }}"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: Disable root connection
+  ansible.builtin.lineinfile: 
+    dest: /etc/ssh/sshd_config
+    regexp: "^PermitRootLogin"
+    line: "PermitRootLogin no"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: Disable password connection
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication"
+    line: "PasswordAuthentication no"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: ChallengeResponseAuthentication
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^ChallengeResponseAuthentication"
+    line: "ChallengeResponseAuthentication no"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: AllowAgentForwarding
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^AllowAgentForwarding"
+    line: "AllowAgentForwarding no"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: PermitTunnel
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PermitTunnel"
+    line: "PermitTunnel no"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: X11Forwarding
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^X11Forwarding"
+    line: "X11Forwarding no"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: MaxAuthTries
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^MaxAuthTries"
+    line: "MaxAuthTries 3"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: UsePAM
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^UsePAM"
+    line: "UsePAM no"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: ClientAliveInterval
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^ClientAliveInterval"
+    line: "ClientAliveInterval 0"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: ClientAliveCountMax
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^ClientAliveCountMax"
+    line: "ClientAliveCountMax 2"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
+
+- name: LoginGraceTime
+  ansible.builtin.lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^LoginGraceTime"
+    line: "LoginGraceTime 300"
+    state: present
+    validate: 'sshd -t -f %s'
+  notify: Restart ssh
