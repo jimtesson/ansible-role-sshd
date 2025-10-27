@@ -22,7 +22,25 @@ You must specify the authorized user for incomming ssh connections.
   host_authorized_users:
     - ansible
     - foo
- 
+
+
+Example
+----------------
+
+```
+  - hosts: webservers
+    tasks:
+      - name: "Include sshd role"
+        ansible.builtin.include_role:
+          name: "jimtesson.sshd_setup"
+          vars:
+            host_authorized_users:
+              - ansible
+              - foo
+
+```
+
+
 Tests
 ----------------
 
