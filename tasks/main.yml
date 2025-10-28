@@ -91,16 +91,16 @@
   notify: Restart ssh
 
 - name: Configure SSH AllowUsers
-  ansible.builtin.lineinfile: 
+  ansible.builtin.lineinfile:
     dest: /etc/ssh/sshd_config
     regexp: "^AllowUsers"
-    line: "AllowUsers {{ host_authorized_users | join(' ') }}"
+    line: "AllowUsers {{ host_users | map(attribute='name') | join(' ') }}"
     state: present
     validate: 'sshd -t -f %s'
   notify: Restart ssh
 
 - name: Disable root connection
-  ansible.builtin.lineinfile: 
+  ansible.builtin.lineinfile:
     dest: /etc/ssh/sshd_config
     regexp: "^PermitRootLogin"
     line: "PermitRootLogin no"

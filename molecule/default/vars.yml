@@ -1,3 +1,4 @@
-host_authorized_users:
-  - ansible
-  - foo
+host_users:
+  - name: foo
+  - name: ansible
+  - name: vagrant

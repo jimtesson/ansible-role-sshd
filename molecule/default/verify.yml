@@ -52,7 +52,7 @@
       ansible.builtin.lineinfile:
         path: /etc/ssh/sshd_config
         regexp: "^AllowUsers"
-        line: "AllowUsers {{ host_authorized_users | join(' ') }}"
+        line: "AllowUsers {{ host_users | map(attribute='name') | join(' ') }}"
         state: present
       check_mode: true
       register: allow_users_check
