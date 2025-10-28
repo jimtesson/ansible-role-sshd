@@ -20,7 +20,7 @@ Role Variables
 You must specify the authorized user for incomming ssh connections.
 
 ```
-  host_users:
+  ssh_allow_users:
     - name: ansible
     - name: foo
 ```
@@ -36,7 +36,7 @@ Example
         ansible.builtin.include_role:
           name: "jimtesson.sshd_setup"
           vars:
-            host_users:
+            ssh_allow_users:
               - name: ansible
               - name: foo
 
