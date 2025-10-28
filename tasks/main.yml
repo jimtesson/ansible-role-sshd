@@ -166,7 +166,7 @@
   ansible.builtin.lineinfile:
     dest: /etc/ssh/sshd_config
     regexp: "^UsePAM"
-    line: "UsePAM no"
+    line: "UsePAM {{ 'yes' if ssh_use_pam | bool else 'no' }}"
     state: present
     validate: 'sshd -t -f %s'
   notify: Restart ssh

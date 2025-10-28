@@ -2,3 +2,5 @@ ssh_allow_users:
   - name: foo
   - name: ansible
   - name: vagrant
+
+ssh_use_pam: false

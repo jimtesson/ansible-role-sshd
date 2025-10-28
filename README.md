@@ -23,6 +23,13 @@ You must specify the authorized user for incomming ssh connections.
   ssh_allow_users:
     - name: ansible
     - name: foo
+
+```
+
+Options:
+
+```
+  ssh_use_pam: true/false (default = false)
 ```
 
 
@@ -39,6 +46,7 @@ Example
             ssh_allow_users:
               - name: ansible
               - name: foo
+            ssh_use_pam: true
 
 ```
 
